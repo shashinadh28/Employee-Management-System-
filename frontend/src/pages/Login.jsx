@@ -30,9 +30,10 @@ const Login = () => {
     try {
       const response = await api.post('/auth/login', formData);
       
-      // Store token and user info
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Store token and user info (backend returns under data)
+      const authData = response.data?.data;
+      localStorage.setItem('token', authData?.token);
+      localStorage.setItem('user', JSON.stringify(authData?.user));
       
       // Redirect to dashboard
       navigate('/');

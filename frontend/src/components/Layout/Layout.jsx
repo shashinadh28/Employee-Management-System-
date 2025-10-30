@@ -18,10 +18,8 @@ const Layout = () => {
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <Outlet />
-            </div>
+          <div className="py-6 px-4 sm:px-6 lg:px-8">
+            <Outlet />
           </div>
         </main>
       </div>

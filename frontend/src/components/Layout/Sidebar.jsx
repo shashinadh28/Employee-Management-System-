@@ -10,16 +10,19 @@ import {
   LogOut,
   Home
 } from 'lucide-react';
+import { getUserRole } from '../../utils/auth';
 
 const Sidebar = ({ isOpen, onClose }) => {
+  const role = getUserRole();
+
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Employees', href: '/employees', icon: Users },
-    { name: 'Departments', href: '/departments', icon: Building2 },
-    { name: 'Roles', href: '/roles', icon: UserCheck },
-    { name: 'Leaves', href: '/leaves', icon: Calendar },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Dashboard', href: '/dashboard', icon: Home, roles: ['admin', 'hr', 'employee'] },
+    { name: 'Employees', href: '/employees', icon: Users, roles: ['admin', 'hr'] },
+    { name: 'Departments', href: '/departments', icon: Building2, roles: ['admin', 'hr'] },
+    { name: 'Roles', href: '/roles', icon: UserCheck, roles: ['admin'] },
+    { name: 'Leaves', href: '/leaves', icon: Calendar, roles: ['admin', 'hr', 'employee'] },
+    { name: 'Reports', href: '/reports', icon: BarChart3, roles: ['admin', 'hr'] },
+    { name: 'Settings', href: '/settings', icon: Settings, roles: ['admin', 'hr', 'employee'] },
   ];
 
   const handleLogout = () => {
@@ -52,7 +55,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
-            {navigation.map((item) => {
+            {navigation.filter(item => !item.roles || item.roles.includes(role)).map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink

@@ -1,17 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Building2, Calendar, CheckCircle, TrendingUp, Clock, UserCheck } from 'lucide-react';
+import { 
+  Users, Building2, Calendar, CheckCircle, TrendingUp, Clock, UserCheck, 
+  Shield, Settings, BarChart3, AlertTriangle, UserPlus, FileText,
+  Target, Award, Activity, Bell, Database, Zap, Globe, Lock,
+  Plus, User, BookOpen, MessageSquare
+} from 'lucide-react';
 import api from '../utils/api';
+import { getUserRole } from '../utils/auth';
+import RoleWidgets from '../components/RoleWidgets';
+import SelfService from '../components/Employee/SelfService';
+import Analytics from '../components/HR/Analytics';
+import SystemManagement from '../components/Admin/SystemManagement';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
     totalEmployees: 0,
     totalDepartments: 0,
     pendingLeaves: 0,
-    approvedLeaves: 0
+    approvedLeaves: 0,
+    activeUsers: 0,
+    systemHealth: 100,
+    recentLogins: 0,
+    criticalAlerts: 0
   });
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
+    const role = getUserRole();
+    setUserRole(role);
     fetchDashboardData();
   }, []);
 
@@ -28,14 +45,19 @@ const Dashboard = () => {
         ]);
 
       const leaves = leavesRes.data.leaves || [];
+      const employees = employeesRes.data.employees || [];
       const pendingLeaves = leaves.filter(leave => leave.status === 'pending').length;
       const approvedLeaves = leaves.filter(leave => leave.status === 'approved').length;
 
       setStats({
-        totalEmployees: employeesRes.data.total || employeesRes.data.employees?.length || 0,
+        totalEmployees: employeesRes.data.total || employees.length || 0,
         totalDepartments: departmentsRes.data.total || departmentsRes.data.departments?.length || 0,
         pendingLeaves,
-        approvedLeaves
+        approvedLeaves,
+        activeUsers: Math.floor((employees.length || 0) * 0.85), // Simulate active users
+        systemHealth: 98,
+        recentLogins: Math.floor((employees.length || 0) * 0.3),
+        criticalAlerts: pendingLeaves > 5 ? 1 : 0
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -44,40 +66,139 @@ const Dashboard = () => {
     }
   };
 
-  const statCards = [
-    {
-      title: 'Total Employees',
-      value: stats.totalEmployees,
-      icon: Users,
-      color: 'bg-blue-500',
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600'
-    },
-    {
-      title: 'Departments',
-      value: stats.totalDepartments,
-      icon: Building2,
-      color: 'bg-green-500',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-600'
-    },
-    {
-      title: 'Pending Leaves',
-      value: stats.pendingLeaves,
-      icon: Clock,
-      color: 'bg-yellow-500',
-      bgColor: 'bg-yellow-50',
-      textColor: 'text-yellow-600'
-    },
-    {
-      title: 'Approved Leaves',
-      value: stats.approvedLeaves,
-      icon: CheckCircle,
-      color: 'bg-purple-500',
-      bgColor: 'bg-purple-50',
-      textColor: 'text-purple-600'
+  // Role-specific stat cards configuration
+  const getStatCards = () => {
+    const baseCards = [
+      {
+        title: 'Total Employees',
+        value: stats.totalEmployees,
+        icon: Users,
+        color: 'bg-blue-500',
+        bgColor: 'bg-blue-50',
+        textColor: 'text-blue-600',
+        roles: ['admin', 'hr', 'employee']
+      },
+      {
+        title: 'Departments',
+        value: stats.totalDepartments,
+        icon: Building2,
+        color: 'bg-green-500',
+        bgColor: 'bg-green-50',
+        textColor: 'text-green-600',
+        roles: ['admin', 'hr']
+      }
+    ];
+
+    // Admin-specific cards
+    if (userRole === 'admin') {
+      return [
+        ...baseCards,
+        {
+          title: 'Active Users',
+          value: stats.activeUsers,
+          icon: Activity,
+          color: 'bg-indigo-500',
+          bgColor: 'bg-indigo-50',
+          textColor: 'text-indigo-600',
+          roles: ['admin']
+        },
+        {
+          title: 'System Health',
+          value: `${stats.systemHealth}%`,
+          icon: Database,
+          color: 'bg-emerald-500',
+          bgColor: 'bg-emerald-50',
+          textColor: 'text-emerald-600',
+          roles: ['admin']
+        },
+        {
+          title: 'Recent Logins',
+          value: stats.recentLogins,
+          icon: Globe,
+          color: 'bg-cyan-500',
+          bgColor: 'bg-cyan-50',
+          textColor: 'text-cyan-600',
+          roles: ['admin']
+        },
+        {
+          title: 'Critical Alerts',
+          value: stats.criticalAlerts,
+          icon: AlertTriangle,
+          color: 'bg-red-500',
+          bgColor: 'bg-red-50',
+          textColor: 'text-red-600',
+          roles: ['admin']
+        }
+      ];
     }
-  ];
+
+    // HR-specific cards
+    if (userRole === 'hr') {
+      return [
+        ...baseCards,
+        {
+          title: 'Pending Leaves',
+          value: stats.pendingLeaves,
+          icon: Clock,
+          color: 'bg-yellow-500',
+          bgColor: 'bg-yellow-50',
+          textColor: 'text-yellow-600',
+          roles: ['hr']
+        },
+        {
+          title: 'Approved Leaves',
+          value: stats.approvedLeaves,
+          icon: CheckCircle,
+          color: 'bg-purple-500',
+          bgColor: 'bg-purple-50',
+          textColor: 'text-purple-600',
+          roles: ['hr']
+        }
+      ];
+    }
+
+    // Employee-specific cards
+    return [
+      {
+        title: 'My Department',
+        value: 'Engineering', // This would come from user data
+        icon: Building2,
+        color: 'bg-green-500',
+        bgColor: 'bg-green-50',
+        textColor: 'text-green-600',
+        roles: ['employee']
+      },
+      {
+        title: 'Leave Balance',
+        value: '15 days', // This would come from user data
+        icon: Calendar,
+        color: 'bg-blue-500',
+        bgColor: 'bg-blue-50',
+        textColor: 'text-blue-600',
+        roles: ['employee']
+      },
+      {
+        title: 'Pending Requests',
+        value: '2',
+        icon: Clock,
+        color: 'bg-yellow-500',
+        bgColor: 'bg-yellow-50',
+        textColor: 'text-yellow-600',
+        roles: ['employee']
+      },
+      {
+        title: 'Profile Status',
+        value: 'Complete',
+        icon: UserCheck,
+        color: 'bg-green-500',
+        bgColor: 'bg-green-50',
+        textColor: 'text-green-600',
+        roles: ['employee']
+      }
+    ];
+  };
+
+  const statCards = getStatCards().filter(card => card.roles.includes(userRole));
 
   if (loading) {
     return (
@@ -96,6 +217,28 @@ const Dashboard = () => {
           Welcome back! Here's an overview of your HR system.
         </p>
       </div>
+
+      {/* Role-specific widgets */}
+      <RoleWidgets />
+
+      {/* Role-specific main content */}
+      {userRole === 'admin' && (
+        <div className="mb-8">
+          <SystemManagement />
+        </div>
+      )}
+      
+      {userRole === 'hr' && (
+        <div className="mb-8">
+          <Analytics />
+        </div>
+      )}
+      
+      {userRole === 'employee' && (
+        <div className="mb-8">
+          <SelfService />
+        </div>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -161,29 +304,120 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Role-specific Quick Actions */}
         <div className="card p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-              <Users className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">Add Employee</p>
-            </button>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {userRole === 'admin' && (
+              <>
+                <button className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                  <UserPlus className="h-8 w-8 text-blue-600 mb-2" />
+                  <span className="text-sm font-medium text-blue-900">Add Employee</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  <Building2 className="h-8 w-8 text-green-600 mb-2" />
+                  <span className="text-sm font-medium text-green-900">New Department</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                  <Shield className="h-8 w-8 text-purple-600 mb-2" />
+                  <span className="text-sm font-medium text-purple-900">Manage Roles</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                  <Settings className="h-8 w-8 text-indigo-600 mb-2" />
+                  <span className="text-sm font-medium text-indigo-900">System Config</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                  <Database className="h-8 w-8 text-red-600 mb-2" />
+                  <span className="text-sm font-medium text-red-900">Backup System</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                  <BarChart3 className="h-8 w-8 text-yellow-600 mb-2" />
+                  <span className="text-sm font-medium text-yellow-900">Analytics</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors">
+                  <Bell className="h-8 w-8 text-cyan-600 mb-2" />
+                  <span className="text-sm font-medium text-cyan-900">Notifications</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
+                  <Activity className="h-8 w-8 text-emerald-600 mb-2" />
+                  <span className="text-sm font-medium text-emerald-900">System Health</span>
+                </button>
+              </>
+            )}
             
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-              <Building2 className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">New Department</p>
-            </button>
+            {userRole === 'hr' && (
+              <>
+                <button className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                  <UserPlus className="h-8 w-8 text-blue-600 mb-2" />
+                  <span className="text-sm font-medium text-blue-900">Add Employee</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                  <Clock className="h-8 w-8 text-yellow-600 mb-2" />
+                  <span className="text-sm font-medium text-yellow-900">Leave Requests</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  <Award className="h-8 w-8 text-green-600 mb-2" />
+                  <span className="text-sm font-medium text-green-900">Performance</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                  <Target className="h-8 w-8 text-purple-600 mb-2" />
+                  <span className="text-sm font-medium text-purple-900">Recruitment</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                  <BookOpen className="h-8 w-8 text-indigo-600 mb-2" />
+                  <span className="text-sm font-medium text-indigo-900">Training</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                  <BarChart3 className="h-8 w-8 text-red-600 mb-2" />
+                  <span className="text-sm font-medium text-red-900">HR Reports</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors">
+                  <Building2 className="h-8 w-8 text-cyan-600 mb-2" />
+                  <span className="text-sm font-medium text-cyan-900">Departments</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
+                  <MessageSquare className="h-8 w-8 text-emerald-600 mb-2" />
+                  <span className="text-sm font-medium text-emerald-900">Feedback</span>
+                </button>
+              </>
+            )}
             
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-              <Calendar className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">Leave Requests</p>
-            </button>
-            
-            <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-              <TrendingUp className="w-6 h-6 text-primary-600 mx-auto mb-2" />
-              <p className="text-sm font-medium text-gray-900">View Reports</p>
-            </button>
+            {userRole === 'employee' && (
+              <>
+                <button className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                  <Calendar className="h-8 w-8 text-blue-600 mb-2" />
+                  <span className="text-sm font-medium text-blue-900">Request Leave</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  <User className="h-8 w-8 text-green-600 mb-2" />
+                  <span className="text-sm font-medium text-green-900">Update Profile</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                  <Clock className="h-8 w-8 text-purple-600 mb-2" />
+                  <span className="text-sm font-medium text-purple-900">Time Tracking</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                  <FileText className="h-8 w-8 text-yellow-600 mb-2" />
+                  <span className="text-sm font-medium text-yellow-900">My Documents</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                  <Award className="h-8 w-8 text-indigo-600 mb-2" />
+                  <span className="text-sm font-medium text-indigo-900">Goals</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors">
+                  <BookOpen className="h-8 w-8 text-red-600 mb-2" />
+                  <span className="text-sm font-medium text-red-900">Learning</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors">
+                  <TrendingUp className="h-8 w-8 text-cyan-600 mb-2" />
+                  <span className="text-sm font-medium text-cyan-900">Performance</span>
+                </button>
+                <button className="flex flex-col items-center p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors">
+                  <MessageSquare className="h-8 w-8 text-emerald-600 mb-2" />
+                  <span className="text-sm font-medium text-emerald-900">Feedback</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

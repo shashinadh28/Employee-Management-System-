@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, User, ChevronDown, LogOut, Settings } from 'lucide-react';
+import { Menu, User, ChevronDown, LogOut, Settings } from 'lucide-react';
+import RoleNotifications from '../RoleNotifications';
 
 const Header = ({ onMenuClick }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -46,10 +47,8 @@ const Header = ({ onMenuClick }) => {
 
         {/* Right side - Notifications and Profile */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500">
-            <Bell className="h-6 w-6" />
-          </button>
+          {/* Role-based Notifications */}
+          <RoleNotifications />
 
           {/* Profile dropdown */}
           <div className="relative" ref={profileRef}>
